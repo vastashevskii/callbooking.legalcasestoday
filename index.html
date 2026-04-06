@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LegalCasesToday — AI Receptionist for Law Firms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0D1B3E;
+    --navy-mid: #142456;
+    --navy-light: #1c2f68;
+    --gold: #C9A84C;
+    --gold-light: #dfc070;
+    --white: #FFFFFF;
+    --text-muted: rgba(255,255,255,0.55);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: rgba(13,27,62,0.98);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .logo-mark { width: 28px; height: 28px; }
+
+  .logo-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--white);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .nav-cta {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--navy);
+    background: var(--gold);
+    padding: 10px 18px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .nav-cta:hover { background: var(--gold-light); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 100px 20px 48px;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 80% 80%, rgba(201,168,76,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 60% at 10% 20%, rgba(20,36,86,0.5) 0%, transparent 60%);
+    z-index: 0;
+  }
+
+  .hero::after { display: none; }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 100%;
+  }
+
+  .eyebrow {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .eyebrow::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--gold);
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(42px, 11vw, 88px);
+    font-weight: 300;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin-bottom: 24px;
+    color: var(--white);
+  }
+
+  h1 em { font-style: italic; color: var(--gold); }
+
+  .hero-sub {
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.72);
+    margin-bottom: 20px;
+  }
+
+  /* ── SCROLL INDICATOR ── */
+  .scroll-hint {
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 1;
+    animation: bob 2s ease-in-out infinite;
+  }
+
+  .scroll-hint svg { opacity: 0.5; }
+
+  @keyframes bob {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(6px); }
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 0 20px;
+    margin-bottom: 80px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 20px;
+    height: 1px;
+    background: var(--gold);
+    flex-shrink: 0;
+  }
+
+  h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(32px, 8vw, 58px);
+    font-weight: 300;
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+
+  h2 em { font-style: italic; color: var(--gold); }
+
+  /* ── PHONE CTA SECTION ── */
+  .phone-section {
+    background: linear-gradient(135deg, var(--navy-mid) 0%, var(--navy-light) 100%);
+    border: 1px solid rgba(201,168,76,0.2);
+    padding: 40px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+    margin: 0 20px 80px;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .phone-section::before {
+    content: '';
+    position: absolute;
+    right: -80px;
+    bottom: -80px;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%);
+  }
+
+  .phone-eyebrow {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+
+  .phone-headline {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(28px, 7vw, 52px);
+    font-weight: 300;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  .phone-headline em { font-style: italic; color: var(--gold); }
+
+  .phone-body {
+    font-size: 15px;
+    font-weight: 300;
+    line-height: 1.8;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .phone-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .phone-icon-wrap {
+    width: 64px;
+    height: 64px;
+    border: 1px solid rgba(201,168,76,0.4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    animation: pulse-ring 2.5s ease-out infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(201,168,76,0.3); }
+    70% { box-shadow: 0 0 0 16px rgba(201,168,76,0); }
+    100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
+  }
+
+  .phone-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--white);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    display: block;
+    width: 100%;
+    padding: 12px 0;
+    min-height: 44px;
+    white-space: nowrap;
+    transition: color 0.2s;
+  }
+
+  .phone-number:hover { color: var(--gold); }
+
+  /* ── STEPS ── */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    margin-top: 32px;
+  }
+
+  .step {
+    display: flex;
+    gap: 20px;
+    padding: 24px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .step:first-child { border-top: 1px solid rgba(255,255,255,0.06); }
+
+  .step-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 300;
+    color: rgba(201,168,76,0.2);
+    line-height: 1;
+    flex-shrink: 0;
+    width: 40px;
+    text-align: right;
+  }
+
+  .step-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--white);
+    margin-bottom: 6px;
+  }
+
+  .step-desc {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* ── FAQ ── */
+  .faq-list { display: flex; flex-direction: column; }
+
+  .faq-item { border-top: 1px solid rgba(255,255,255,0.08); }
+  .faq-item:last-child { border-bottom: 1px solid rgba(255,255,255,0.08); }
+
+  .faq-q {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 22px 0;
+    background: none;
+    border: none;
+    color: var(--white);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 400;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .faq-q:hover { color: var(--gold); }
+  .faq-q.open { color: var(--gold); }
+
+  .faq-arrow {
+    flex-shrink: 0;
+    color: var(--gold);
+    transition: transform 0.3s ease;
+  }
+
+  .faq-q.open .faq-arrow { transform: rotate(180deg); }
+
+  .faq-a { display: none; padding-bottom: 22px; }
+  .faq-a.open { display: block; }
+
+  .faq-a p {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.8;
+    color: rgba(255,255,255,0.62);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    padding: 32px 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .footer-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.06em;
+  }
+
+  .footer-links a { color: inherit; text-decoration: none; }
+  .footer-links a:hover { color: var(--gold); }
+
+  /* ── ANIMATIONS ── */
+  .fade-up {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  /* ── TABLET & DESKTOP ── */
+  @media (min-width: 640px) {
+    nav { padding: 20px 40px; }
+    .logo-mark { width: 32px; height: 32px; }
+    .logo-text { font-size: 16px; }
+    .hero { padding: 120px 40px 80px; }
+    section { padding: 0 40px; margin-bottom: 100px; }
+    .phone-section { padding: 60px 40px; margin: 0 20px 100px; }
+    .phone-number { font-size: 36px; }
+  }
+
+  @media (min-width: 900px) {
+    nav {
+      padding: 24px 60px;
+      background: linear-gradient(to bottom, rgba(13,27,62,0.98) 0%, transparent 100%);
+    }
+    .logo-mark { width: 36px; height: 36px; }
+    .logo-text { font-size: 18px; }
+    .nav-cta { padding: 10px 24px; font-size: 13px; }
+
+    .hero {
+      padding: 140px 60px 80px;
+      min-height: 100vh;
+    }
+    .hero-content { max-width: 900px; margin-left: 80px; }
+    .hero::after {
+      content: '';
+      position: absolute;
+      left: 60px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1px;
+      height: 200px;
+      background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+      opacity: 0.5;
+      display: block;
+    }
+    .hero-sub { font-size: 17px; max-width: 560px; }
+    .eyebrow { font-size: 11px; margin-bottom: 28px; }
+
+    section { padding: 0 60px; margin-bottom: 120px; }
+    .section-label { font-size: 11px; }
+
+    .phone-section {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 80px 60px;
+      margin: 0 60px 120px;
+      gap: 60px;
+    }
+    .phone-right { align-items: center; }
+    .phone-icon-wrap { width: 80px; height: 80px; }
+    .phone-number { font-size: 32px; padding: 12px 0; }
+
+    .step { gap: 28px; padding: 32px 0; }
+    .step-num { font-size: 42px; width: 52px; }
+    .step-title { font-size: 16px; }
+    .steps { margin-top: 48px; }
+
+    .faq-q { font-size: 20px; padding: 28px 0; }
+    .faq-a p { font-size: 15px; max-width: 640px; }
+    .faq-a { padding-bottom: 28px; }
+
+    footer {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 40px 60px;
+      text-align: left;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="#">
+    <svg class="logo-mark" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <text x="0" y="28" font-family="Cormorant Garamond, serif" font-size="30" font-weight="600" fill="#C9A84C">L</text>
+    </svg>
+    <span class="logo-text">LegalCasesToday</span>
+  </a>
+  <a class="nav-cta" href="tel:+16626861866">Call to Test It</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="eyebrow">AI Receptionist for Law Firms</div>
+    <h1>
+      Your phone gets answered.<br>
+      <em>Even when you're with a client.</em>
+    </h1>
+    <p class="hero-sub">
+      Every missed call is a potential retainer that someone else picked up.
+      Our AI receptionist answers every call and books the consultation into your calendar before you're out of your meeting.
+    </p>
+
+  </div>
+
+
+</div>
+
+
+
+<!-- PHONE CTA -->
+<div class="phone-section fade-up" id="call">
+  <div>
+    <div class="phone-eyebrow">Test It Right Now</div>
+    <div class="phone-headline">Call the number.<br><em>Experience it yourself.</em></div>
+    <p class="phone-body">
+      Call the number below. You'll reach the same receptionist your clients will. Ask anything. See how it handles a real call.
+    </p>
+  </div>
+
+  <div class="phone-right">
+    <div class="phone-icon-wrap">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.15 3.38a2 2 0 0 1 1.99-2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6.29 6.29l.62-.62a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    </div>
+    <a class="phone-number" href="tel:+16626861866">+1 (662) 686-1866</a>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section>
+  <div class="fade-up">
+    <div class="section-label">What It Does</div>
+    <h2>From missed call<br>to <em>booked consultation</em></h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <div class="step-title">Answers in seconds</div>
+          <div class="step-desc">Every call gets picked up — while you're in a mediation, a deposition, or with a client. No ring-outs. No voicemail.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <div class="step-title">Qualifies the caller</div>
+          <div class="step-desc">Asks the right intake questions. Understands whether it's divorce, custody, or a modification. Whether the spouse has already filed. Whether children are involved. The details that matter before you pick up the phone.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <div class="step-title">Books the consultation</div>
+          <div class="step-desc">Schedules directly onto your calendar. Sends the caller a confirmation. You come out of your meeting with new consultations already on your books.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <div class="step-title">Sends you a full summary</div>
+          <div class="step-desc">Every call is logged: caller name, case type, key details, and the transcript. You know exactly who you're meeting before you pick up the phone.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- FAQ -->
+<section>
+  <div style="max-width: 720px;">
+    <div class="section-label">Common Questions</div>
+    <h2 style="margin-bottom: 40px;"><em>FAQ</em></h2>
+
+    <div class="faq-list">
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>I don't want a robot talking to my clients.</span>
+          <svg class="faq-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>That's the right instinct — family law clients are going through some of the hardest moments of their lives, and how they're first received matters. Call the number on this page and experience it yourself. The voice is calm, measured, and specific to family law intake. It doesn't rush. It doesn't sound like a phone tree. The question worth asking is whether voicemail serves those clients better.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>My clients are going through something serious. They need a real person.</span>
+          <svg class="faq-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>They do — and that person is you. Someone calling about a divorce or a custody situation is scared and looking for a reason to trust before they've spoken to anyone. The receptionist's job is to make sure they get to you, not to replace the conversation you'll have. Right now, while you're in a mediation, that person calls, gets voicemail, and moves on to the next attorney. An immediate, calm response that books them a time to speak with you is not a worse experience. It's the reason they stay.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>How do I know it will ask the right intake questions?</span>
+          <svg class="faq-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>The intake flow is built specifically for family law — not repurposed from a general template. It covers case type, whether the spouse has filed, children involved, jurisdiction, and timeline before booking. You also get a full transcript of every call, so if something needs adjusting, you'll know within the first week. The questions are configurable to your practice from the start.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <span>What if it books someone I can't help?</span>
+          <svg class="faq-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>It will, occasionally. So does every receptionist, every intake form, and every referral source. The question is whether the alternative — missing the call entirely — is better. You'll have the full call summary before the consultation, so you'll know before you walk in. And over time, the intake questions can be tightened based on what you're seeing.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- BOTTOM CTA -->
+<div style="text-align: center; padding: 60px 20px 40px; border-top: 1px solid rgba(201,168,76,0.15);">
+  <div style="font-size: 10px; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px;">Ready to see it work</div>
+  <div style="font-family: 'Cormorant Garamond', serif; font-size: clamp(28px, 7vw, 52px); font-weight: 300; line-height: 1.1; margin-bottom: 28px;">Call the number.<br><em style="color: var(--gold); font-style: italic;">Experience it yourself.</em></div>
+  <a href="tel:+16626861866" style="font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; color: var(--white); text-decoration: none; letter-spacing: 0.03em; border-bottom: 1px solid rgba(201,168,76,0.4); padding: 12px 0 4px; display: block; width: 100%; min-height: 44px; white-space: nowrap; transition: color 0.2s;" onmouseover="this.style.color='#C9A84C'" onmouseout="this.style.color='#FFFFFF'">+1 (662) 686-1866</a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">LegalCasesToday · legalcasestoday.com</div>
+  <div class="footer-links">
+    <a href="#"><span class="__cf_email__" data-cfemail="74171b1a001517003418111315181715071107001b10150d5a171b19">[email&#160;protected]</span></a>
+    <a href="https://www.linkedin.com/in/slava-astashevskii-2a0546116/" target="_blank">LinkedIn</a>
+  </div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  // ── FAQ TOGGLE ──
+  function toggleFaq(btn) {
+    const answer = btn.nextElementSibling;
+    const isOpen = btn.classList.contains('open');
+    // Close all
+    document.querySelectorAll('.faq-q').forEach(b => {
+      b.classList.remove('open');
+      b.nextElementSibling.classList.remove('open');
+    });
+    // Open clicked if it was closed
+    if (!isOpen) {
+      btn.classList.add('open');
+      answer.classList.add('open');
+    }
+  }
+
+
+  // ── INTERSECTION OBSERVER FOR FADE-UP ──
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(
